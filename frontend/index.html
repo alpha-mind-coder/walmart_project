@@ -1,194 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Book Barcode Scanner</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Self-Checkout</title>
+
   <style>
-   #scanner-container {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
-  background: black;
-}
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
 
-#scanner {
-  width: 100%;
-  height: auto;
-  display: block;
-}
+    #scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto 20px;
+      background: black;
+    }
 
-#result {
-  padding: 15px;
-  text-align: center;
-  font-size: 18px;
-  min-height: 24px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  margin-top: 10px;
-}
+    video#scanner, canvas#scanner-overlay, canvas#canvas {
+      width: 100%;
+      display: block;
+      margin: 10px auto;
+      border-radius: 4px;
+    }
 
-.drawingBuffer {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
+    #result, #results {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
 
-/*
-*/
+    .scan-button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-/* Add to your existing CSS */
-.scan-button {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin: 0 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+    .scan-button:hover {
+      background: #0056b3;
+    }
 
-.scan-button:hover {
-  background: #5a6268;
-}
-
-.error {
-  color: #dc3545;
-  font-weight: bold;
-}
-
-#barcode-image-preview {
-  max-width: 200px;
-  margin: 10px auto;
-  display: block;
-  border: 2px dashed #ccc;
-}
-
- canvas {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 10px auto;
-  }
-
+    .error {
+      color: red;
+      font-weight: bold;
+    }
   </style>
-
 </head>
 <body>
+
+  <h2>Smart Self-Checkout System</h2>
+
   <div id="scanner-container">
     <video id="scanner" autoplay playsinline muted></video>
     <canvas id="scanner-overlay"></canvas>
   </div>
-  
+
   <div id="controls">
-    <button id="start-button">Start Scanner</button>
+    <button id="start-button" class="scan-button">📷 Start Barcode Scanner</button>
+    <button id="bag-scan-button" class="scan-button">🛍️ Scan Full Bag</button>
   </div>
-  
-  <div id="result">Scan a book barcode...</div>
 
-  <input type="file" id="imageInput" accept="image/*">
-<canvas id="canvas" style="max-width: 100%"></canvas>
-<div id="results"></div>
+  <input type="file" id="fullBagInput" accept="image/*" style="display: none;" />
 
-  <!-- TensorFlow Core -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <canvas id="canvas"></canvas>
+  <div id="result"></div>
+  <div id="results"></div>
 
-<!-- COCO-SSD for object detection -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-
-<!-- MobileNet for image classification -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+  <!-- 📦 Scripts go here -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-  <script src="scanner.js"></script>
-
-
+  <script src="item_scanner.js"></script>
+  <script src="vision.js"></script>
 
   <script>
+    // Connect bag scan to file input
+    document.getElementById("bag-scan-button").addEventListener("click", () => {
+      document.getElementById("fullBagInput").click();
+    });
 
-    // ADDING CATALOG
-    const products = [
-  { name: "banana", price: 10 },
-  { name: "bottle", price: 40 },
-  { name: "laptop", price: 30000 },
-  { name: "apple", price: 20 },
-  { name: "maggi", price: 15 },
-  { name: "pepsi", price: 35 },
-  // Add more as needed
-];
-
-let cocoModel, mobilenetModel;
-
-// Load both models
-Promise.all([
-  cocoSsd.load().then(model => cocoModel = model),
-  mobilenet.load().then(model => mobilenetModel = model)
-]).then(() => {
-  console.log("Models loaded!");
-});
-
-document.getElementById("imageInput").addEventListener("change", async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  // Load image into canvas
-  const img = new Image();
-  img.src = URL.createObjectURL(file);
-  img.onload = async () => {
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-
-    const predictions = await cocoModel.detect(img);
-    const resultsContainer = document.getElementById("results");
-    resultsContainer.innerHTML = "";
-
-    let cart = {};
-
-for (const prediction of predictions) {
-  if (prediction.score < 0.6) continue;
-
-  const [x, y, width, height] = prediction.bbox;
-  const cropped = ctx.getImageData(x, y, width, height);
-
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const tempCtx = tempCanvas.getContext("2d");
-  tempCtx.putImageData(cropped, 0, 0);
-
-  const tfImg = tf.browser.fromPixels(tempCanvas);
-  const classifierResult = await mobilenetModel.classify(tfImg);
-  const label = classifierResult[0]?.className.toLowerCase() || "unknown";
-
-  const matched = products.find(p => label.includes(p.name.toLowerCase()));
-  if (matched) {
-    cart[matched.name] = cart[matched.name] || { ...matched, count: 0 };
-    cart[matched.name].count += 1;
-  }
-
-  ctx.strokeStyle = "green";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, y, width, height);
-  ctx.font = "16px Arial";
-  ctx.fillStyle = "green";
-  ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
-}
-// BASKET SUMMARY
-let total = 0;
-resultsContainer.innerHTML = "<h3>Basket Contents:</h3>";
-for (const key in cart) {
-  const item = cart[key];
-  total += item.count * item.price;
-  resultsContainer.innerHTML += `<div>🛍️ ${item.name} × ${item.count} = ₹${item.count * item.price}</div>`;
-}
-resultsContainer.innerHTML += `<hr><h4>Total: ₹${total}</h4>`;
-  };
-});
-</script>
+    document.getElementById("fullBagInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) runBagScan(file);
+    });
+  </script>
 </body>
 </html>
