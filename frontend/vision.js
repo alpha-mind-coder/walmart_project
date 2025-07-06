@@ -1,31 +1,35 @@
+let cocoModel, mobilenetModel;
+
 async function runBagScan(imageFile) {
+  // Load models once
+  if (!cocoModel) cocoModel = await cocoSsd.load();
+  if (!mobilenetModel) mobilenetModel = await mobilenet.load();
+
   const img = new Image();
   img.src = URL.createObjectURL(imageFile);
 
-  const products = [
-    { name: "banana", price: 10 },
-    { name: "bottle", price: 40 },
-    { name: "laptop", price: 30000 },
-    { name: "apple", price: 20 },
-    { name: "maggi", price: 15 },
-    { name: "pepsi", price: 35 }
-  ];
-
-  const cocoModel = await cocoSsd.load();
-  const mobilenetModel = await mobilenet.load();
-
   img.onload = async () => {
-    const canvas = document.getElementById("canvas");
+    // Set up canvas
+    const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
 
+    // Detect objects
     const predictions = await cocoModel.detect(img);
-    const resultsContainer = document.getElementById("results");
-    resultsContainer.innerHTML = "";
+    console.log("COCO Predictions:", predictions);
 
     let cart = {};
+    const products = [
+      { name: "banana", price: 10 },
+      { name: "bottle", price: 40 },
+      { name: "laptop", price: 30000 },
+      { name: "apple", price: 20 },
+      { name: "maggi", price: 15 },
+      { name: "book", price: 150 },
+      { name: "pepsi", price: 35 }
+    ];
 
     for (const prediction of predictions) {
       if (prediction.score < 0.6) continue;
@@ -49,6 +53,7 @@ async function runBagScan(imageFile) {
         cart[matched.name].count += 1;
       }
 
+      // Draw bounding box
       ctx.strokeStyle = "green";
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, width, height);
@@ -57,15 +62,25 @@ async function runBagScan(imageFile) {
       ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
     }
 
-    // Summary
+    // Update DOM results
+    const resultDiv = document.getElementById("result");
+    const cardDiv = document.getElementById("productCard");
     let total = 0;
-    resultsContainer.innerHTML = "<h3>🛒 Bag Contents</h3>";
-    for (const key in cart) {
-      const item = cart[key];
-      total += item.count * item.price;
-      resultsContainer.innerHTML += `<div>✔️ ${item.name} × ${item.count} = ₹${item.count * item.price}</div>`;
-    }
 
-    resultsContainer.innerHTML += `<hr><strong>Total: ₹${total}</strong>`;
+    if (Object.keys(cart).length > 0) {
+      resultDiv.innerHTML = "<strong>🛍️ Bag Scan Results</strong>";
+      cardDiv.innerHTML = "";
+
+      for (const key in cart) {
+        const item = cart[key];
+        total += item.count * item.price;
+        cardDiv.innerHTML += `<div>✔️ ${item.name} × ${item.count} = ₹${item.count * item.price}</div>`;
+      }
+
+      cardDiv.innerHTML += `<hr><strong>Total: ₹${total}</strong>`;
+    } else {
+      resultDiv.innerText = "No recognizable products detected in the bag.";
+      cardDiv.innerHTML = "";
+    }
   };
 }
