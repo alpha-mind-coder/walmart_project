@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         Quagga.start();
+        console.log("Quagga started. Video stream should now be visible.");
       });
 
     } catch (err) {
