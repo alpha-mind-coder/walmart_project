@@ -6,6 +6,13 @@ module.exports =  {
     isbn: "9780143461845",
     price: 350
   },
+   8904271201895: {
+    type: "product",
+    title: "Aerosol air fresher",
+    author: "Darius FOROUX",
+    isbn: "8904271201895",
+    price: 239
+  },
  9781416511557: {
     type: "book",
     title: "The Magic Of Thinking Big",
