@@ -85,7 +85,7 @@ function processBarcode(result) {
     <small>Format: ${format}</small>
   `;
 
-  fetch("http://localhost:3000/api/products/scan", {
+  fetch("https://walmart-project.onrender.com/api/products/scan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ value: code })
