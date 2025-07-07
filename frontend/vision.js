@@ -27,9 +27,13 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
     scanBtn.textContent = "🛍️ Scan Full Bag";
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
+    const container = document.getElementById("scanner-container");
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+
+    // Scale the image to fit nicely
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
     console.log("🖼️ Image loaded and drawn:", img.width, img.height);
 
     const predictions = await cocoModel.detect(img);
