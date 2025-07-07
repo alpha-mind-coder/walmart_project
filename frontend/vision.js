@@ -31,12 +31,10 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
 
-    // 🧠 Make canvas match image size exactly
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    // ⚡ Draw image inside canvas without scaling
-    ctx.drawImage(img, 0, 0);
+   const container = document.getElementById("scanner-container");
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     const predictions = await cocoModel.detect(img);
     console.log("📦 Detected items:", predictions);
