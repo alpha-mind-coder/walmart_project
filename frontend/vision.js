@@ -7,14 +7,18 @@ let cocoModel, mobilenetModel;
   console.log("✅ Models ready");
 })();
 
-// Trigger scan button file upload
-document.getElementById("bag-scan-button").addEventListener("click", () => {
-  const scanBtn = document.getElementById("bag-scan-button");
-  scanBtn.textContent = "🛍️ Uploading...";
-  document.getElementById("fullBagInput").click();
+// 📷 Reset UI and show camera when "Start Scanner" is tapped
+document.getElementById("start-button").addEventListener("click", () => {
+  document.getElementById("scanner").style.display = "block"; // Show live video
+  const canvas = document.getElementById("scanner-overlay");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear old image & bounding boxes
+
+  document.getElementById("result").textContent = "Ready to scan barcode...";
+  document.getElementById("productCard").innerHTML = "";
 });
 
-// Handle file input
+// 👜 Handle bag image upload and scan
 document.getElementById("fullBagInput").addEventListener("change", async (e) => {
   const imageFile = e.target.files[0];
   if (!imageFile || !cocoModel || !mobilenetModel) return;
@@ -26,12 +30,13 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
   img.src = URL.createObjectURL(imageFile);
 
   img.onload = async () => {
+    document.getElementById("scanner").style.display = "none"; // Hide camera during scan
     scanBtn.textContent = "🛍️ Scan Full Bag";
 
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
 
-   const container = document.getElementById("scanner-container");
+    const container = document.getElementById("scanner-container");
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
