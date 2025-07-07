@@ -10,23 +10,18 @@
       position: relative;
       width: 100%;
       max-width: 600px;
-      height: 320px;
-      overflow: hidden;
-      /* margin: 20px auto; */
       background: black;
     }
-    #scanner {
+    #scanner-overlay {
       width: 100%;
-      height: 100%; 
-      object-fit: cover;
       display: block;
-}
-
+      margin-top: 10px;
+      border: 1px solid #ccc;
+    }
     #result {
       padding: 15px;
       text-align: center;
       font-size: 18px;
-      min-height: 24px;
       background: #f0f0f0;
       border-radius: 4px;
       margin-top: 10px;
@@ -59,7 +54,7 @@
 <body>
   <div id="scanner-container">
     <video id="scanner" autoplay playsinline muted></video>
-    <canvas id="scanner-overlay" class="drawingBuffer"></canvas>
+    <canvas id="scanner-overlay"></canvas>
   </div>
 
   <div id="controls">
@@ -70,28 +65,22 @@
   <input type="file" id="fullBagInput" accept="image/*" style="display: none;" />
 
   <div id="result">Scan a book barcode...</div>
-  <div class="card" id="productCard">
-    <!-- JS will populate this -->
-  </div>
+  <div class="card" id="productCard"></div>
 
-  <!-- External Libraries -->
+  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
 
-  <!-- Your Scripts -->
+  <!-- Your JS -->
   <script src="item_scanner.js"></script>
   <script src="vision.js"></script>
 
-  <!-- Connect Buttons -->
+  <!-- Trigger file input -->
   <script>
     document.getElementById("bag-scan-button").addEventListener("click", () => {
       document.getElementById("fullBagInput").click();
-    });
-
-    document.getElementById("fullBagInput").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) runBagScan(file);
     });
   </script>
 </body>
