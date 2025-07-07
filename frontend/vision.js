@@ -13,29 +13,21 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
   if (!imageFile || !cocoModel || !mobilenetModel) return;
 
   const scanBtn = document.getElementById("bag-scan-button");
-  scanBtn.addEventListener("click", () => {
+scanBtn.addEventListener("click", () => {
   scanBtn.textContent = "🛍️ Uploading...";
   document.getElementById("fullBagInput").click();
 });
-
-
   const img = new Image();
   img.src = URL.createObjectURL(imageFile);
 
-  console.log("📷 Image file selected:", imageFile);
-  
   img.onload = async () => {
-    scanBtn.textContent = "🛍️ Scan Full Bag";
+     scanBtn.textContent = "🛍️ Scan Full Bag";
+
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
-    const container = document.getElementById("scanner-container");
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-
-    // Scale the image to fit nicely
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    console.log("🖼️ Image loaded and drawn:", img.width, img.height);
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
 
     const predictions = await cocoModel.detect(img);
     console.log("📦 Detected items:", predictions);
@@ -50,46 +42,37 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
       { name: "book", price: 150 },
       { name: "pepsi", price: 35 }
     ];
-for (const prediction of predictions) {
-  if (prediction.score < 0.4) continue; // 🔽 Lowered threshold for debugging
 
-  const [x, y, width, height] = prediction.bbox;
-  const cropped = ctx.getImageData(x, y, width, height);
+    for (const prediction of predictions) {
+      if (prediction.score < 0.6) continue;
 
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const tempCtx = tempCanvas.getContext("2d");
-  tempCtx.putImageData(cropped, 0, 0);
+      const [x, y, width, height] = prediction.bbox;
+      const cropped = ctx.getImageData(x, y, width, height);
 
-  // 🔍 Optional: preview the cropped box for debugging
-  // document.body.appendChild(tempCanvas); // Uncomment only for testing
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.putImageData(cropped, 0, 0);
 
-  const tfImg = tf.browser.fromPixels(tempCanvas);
-  const classifierResult = await mobilenetModel.classify(tfImg);
-  const label = classifierResult[0]?.className.toLowerCase() || "unknown";
+      const tfImg = tf.browser.fromPixels(tempCanvas);
+      const classifierResult = await mobilenetModel.classify(tfImg);
+      const label = classifierResult[0]?.className.toLowerCase() || "unknown";
 
-  console.log("🔖 Detected Label:", label); // ✅ See what the model thinks
+      const matched = products.find(p => label.includes(p.name.toLowerCase()));
+      if (matched) {
+        cart[matched.name] = cart[matched.name] || { ...matched, count: 0 };
+        cart[matched.name].count += 1;
+      }
 
-  const matched = products.find(p =>
-    label.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(label)
-  );
+      ctx.strokeStyle = "green";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, width, height);
+      ctx.font = "14px Arial";
+      ctx.fillStyle = "green";
+      ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
+    }
 
-  console.log("🎯 Matched Product:", matched?.name || "None"); // ✅ Debug match logic
-
-  if (matched) {
-    cart[matched.name] = cart[matched.name] || { ...matched, count: 0 };
-    cart[matched.name].count += 1;
-  }
-
-  // Draw result on canvas
-  ctx.strokeStyle = "green";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, y, width, height);
-  ctx.font = "14px Arial";
-  ctx.fillStyle = "green";
-  ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
-}
     const resultDiv = document.getElementById("result");
     const cardDiv = document.getElementById("productCard");
     let total = 0;
