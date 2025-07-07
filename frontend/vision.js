@@ -45,37 +45,46 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
       { name: "book", price: 150 },
       { name: "pepsi", price: 35 }
     ];
+for (const prediction of predictions) {
+  if (prediction.score < 0.4) continue; // 🔽 Lowered threshold for debugging
 
-    for (const prediction of predictions) {
-      if (prediction.score < 0.6) continue;
+  const [x, y, width, height] = prediction.bbox;
+  const cropped = ctx.getImageData(x, y, width, height);
 
-      const [x, y, width, height] = prediction.bbox;
-      const cropped = ctx.getImageData(x, y, width, height);
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext("2d");
+  tempCtx.putImageData(cropped, 0, 0);
 
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = width;
-      tempCanvas.height = height;
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCtx.putImageData(cropped, 0, 0);
+  // 🔍 Optional: preview the cropped box for debugging
+  // document.body.appendChild(tempCanvas); // Uncomment only for testing
 
-      const tfImg = tf.browser.fromPixels(tempCanvas);
-      const classifierResult = await mobilenetModel.classify(tfImg);
-      const label = classifierResult[0]?.className.toLowerCase() || "unknown";
+  const tfImg = tf.browser.fromPixels(tempCanvas);
+  const classifierResult = await mobilenetModel.classify(tfImg);
+  const label = classifierResult[0]?.className.toLowerCase() || "unknown";
 
-      const matched = products.find(p => label.includes(p.name.toLowerCase()));
-      if (matched) {
-        cart[matched.name] = cart[matched.name] || { ...matched, count: 0 };
-        cart[matched.name].count += 1;
-      }
+  console.log("🔖 Detected Label:", label); // ✅ See what the model thinks
 
-      ctx.strokeStyle = "green";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, width, height);
-      ctx.font = "14px Arial";
-      ctx.fillStyle = "green";
-      ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
-    }
+  const matched = products.find(p =>
+    label.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(label)
+  );
 
+  console.log("🎯 Matched Product:", matched?.name || "None"); // ✅ Debug match logic
+
+  if (matched) {
+    cart[matched.name] = cart[matched.name] || { ...matched, count: 0 };
+    cart[matched.name].count += 1;
+  }
+
+  // Draw result on canvas
+  ctx.strokeStyle = "green";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, width, height);
+  ctx.font = "14px Arial";
+  ctx.fillStyle = "green";
+  ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
+}
     const resultDiv = document.getElementById("result");
     const cardDiv = document.getElementById("productCard");
     let total = 0;
