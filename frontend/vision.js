@@ -23,6 +23,7 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
   img.src = URL.createObjectURL(imageFile);
 
   console.log("📷 Image file selected:", imageFile);
+  
   img.onload = async () => {
     scanBtn.textContent = "🛍️ Scan Full Bag";
     const canvas = document.getElementById("scanner-overlay");
