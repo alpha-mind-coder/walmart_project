@@ -7,26 +7,35 @@ let cocoModel, mobilenetModel;
   console.log("✅ Models ready");
 })();
 
-// Match the input element in index.html
+// Trigger scan button file upload
+document.getElementById("bag-scan-button").addEventListener("click", () => {
+  const scanBtn = document.getElementById("bag-scan-button");
+  scanBtn.textContent = "🛍️ Uploading...";
+  document.getElementById("fullBagInput").click();
+});
+
+// Handle file input
 document.getElementById("fullBagInput").addEventListener("change", async (e) => {
   const imageFile = e.target.files[0];
   if (!imageFile || !cocoModel || !mobilenetModel) return;
 
   const scanBtn = document.getElementById("bag-scan-button");
-scanBtn.addEventListener("click", () => {
-  scanBtn.textContent = "🛍️ Uploading...";
-  document.getElementById("fullBagInput").click();
-});
+  scanBtn.textContent = "🛍️ Scanning...";
+
   const img = new Image();
   img.src = URL.createObjectURL(imageFile);
 
   img.onload = async () => {
-     scanBtn.textContent = "🛍️ Scan Full Bag";
+    scanBtn.textContent = "🛍️ Scan Full Bag";
 
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
+
+    // 🧠 Make canvas match image size exactly
     canvas.width = img.width;
     canvas.height = img.height;
+
+    // ⚡ Draw image inside canvas without scaling
     ctx.drawImage(img, 0, 0);
 
     const predictions = await cocoModel.detect(img);
@@ -59,7 +68,9 @@ scanBtn.addEventListener("click", () => {
       const classifierResult = await mobilenetModel.classify(tfImg);
       const label = classifierResult[0]?.className.toLowerCase() || "unknown";
 
-      const matched = products.find(p => label.includes(p.name.toLowerCase()));
+      const matched = products.find(p =>
+        label.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(label)
+      );
       if (matched) {
         cart[matched.name] = cart[matched.name] || { ...matched, count: 0 };
         cart[matched.name].count += 1;
