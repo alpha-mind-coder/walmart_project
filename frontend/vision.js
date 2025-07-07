@@ -12,15 +12,25 @@ document.getElementById("fullBagInput").addEventListener("change", async (e) => 
   const imageFile = e.target.files[0];
   if (!imageFile || !cocoModel || !mobilenetModel) return;
 
+  const scanBtn = document.getElementById("bag-scan-button");
+  scanBtn.addEventListener("click", () => {
+  scanBtn.textContent = "🛍️ Uploading...";
+  document.getElementById("fullBagInput").click();
+});
+
+
   const img = new Image();
   img.src = URL.createObjectURL(imageFile);
 
+  console.log("📷 Image file selected:", imageFile);
   img.onload = async () => {
+    scanBtn.textContent = "🛍️ Scan Full Bag";
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
+    console.log("🖼️ Image loaded and drawn:", img.width, img.height);
 
     const predictions = await cocoModel.detect(img);
     console.log("📦 Detected items:", predictions);

@@ -6,17 +6,26 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Smart Barcode & Bag Scanner</title>
   <style>
-    #scanner-container {
-      position: relative;
-      width: 100%;
-      max-width: 600px;
-      background: black;
-    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden; /* prevents scroll bars */
+      font-family: sans-serif;
+}
+
+  #scanner-container {
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
     #scanner-overlay {
       width: 100%;
-      display: block;
-      margin-top: 10px;
-      border: 1px solid #ccc;
+      max-height: 60vh;
+      object-fit: contain;
     }
     #result {
       padding: 15px;
@@ -54,7 +63,7 @@
 <body>
   <div id="scanner-container">
     <video id="scanner" autoplay playsinline muted></video>
-    <canvas id="scanner-overlay"></canvas>
+    <canvas id="scanner-overlay" style="width: 100%; height: auto; aspect-ratio: auto; display: block;"></canvas>
   </div>
 
   <div id="controls">
