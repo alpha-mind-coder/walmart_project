@@ -1,25 +1,38 @@
 let cocoModel, mobilenetModel;
 
-async function runBagScan(imageFile) {
-  // Load models once
-  if (!cocoModel) cocoModel = await cocoSsd.load();
-  if (!mobilenetModel) mobilenetModel = await mobilenet.load();
+// Load models once at startup
+async function loadModels() {
+  cocoModel = await cocoSsd.load();
+  mobilenetModel = await mobilenet.load();
+  console.log("✅ Models loaded");
+}
+
+// Trigger model loading immediately
+loadModels();
+
+// File input logic
+const inputFile = document.getElementById("photo-upload");
+
+inputFile.addEventListener("change", async (e) => {
+  const imageFile = e.target.files[0];
+  if (!imageFile || !cocoModel || !mobilenetModel) return;
 
   const img = new Image();
   img.src = URL.createObjectURL(imageFile);
 
   img.onload = async () => {
-    // Set up canvas
+    // Canvas setup
     const canvas = document.getElementById("scanner-overlay");
     const ctx = canvas.getContext("2d");
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
 
-    // Detect objects
+    // Object detection
     const predictions = await cocoModel.detect(img);
     console.log("COCO Predictions:", predictions);
 
+    // Classification + matching
     let cart = {};
     const products = [
       { name: "banana", price: 10 },
@@ -53,7 +66,7 @@ async function runBagScan(imageFile) {
         cart[matched.name].count += 1;
       }
 
-      // Draw bounding box
+      // Draw bounding box + label
       ctx.strokeStyle = "green";
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, width, height);
@@ -62,7 +75,7 @@ async function runBagScan(imageFile) {
       ctx.fillText(label, x, y > 20 ? y - 5 : y + 20);
     }
 
-    // Update DOM results
+    // Update results in DOM
     const resultDiv = document.getElementById("result");
     const cardDiv = document.getElementById("productCard");
     let total = 0;
@@ -82,5 +95,5 @@ async function runBagScan(imageFile) {
       resultDiv.innerText = "No recognizable products detected in the bag.";
       cardDiv.innerHTML = "";
     }
-  };
-}
+  }; // ✅ this closes img.onload
+}); // ✅ this closes inputFile.addEventListener
